@@ -16,16 +16,6 @@ public class Book implements Serializable
         this.annotation = annotation;
     }
     
-    Book(int bookId, String title, String author, String isbn, String annotation, Collection<Chapter> chapters)
-    {
-        this.bookId = bookId;
-        this.title = title;
-        this.author = author;
-        this.isbn = isbn;
-        this.annotation = annotation;
-        this.chapters = chapters;
-    }
-    
     public String getAnnotation() 
     {
         return annotation;
@@ -54,17 +44,6 @@ public class Book implements Serializable
     public void setBookId(int bookId) 
     {
         this.bookId = bookId;
-    }
-
-    public Collection<Chapter> getChapters() 
-    {
-        Collection<Chapter> chaptersDefensiveCopy = new HashSet<>(chapters);
-        return chaptersDefensiveCopy;
-    }
-
-    public void setChapters(Collection<Chapter> chapters) 
-    {
-        this.chapters = chapters;
     }
 
     public String getIsbn() 
@@ -129,6 +108,5 @@ public class Book implements Serializable
     private String author;
     private String isbn;
     private String annotation;
-    private Collection<Chapter> chapters = new HashSet<>();
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 }

@@ -12,8 +12,6 @@ import javax.swing.JTree;
 import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
-import ru.mail.timelimit.client.exceptions.BeanAlreadyExistsException;
-import ru.mail.timelimit.client.exceptions.BeanNotFoundException;
 import ru.mail.timelimit.client.model.ServerProxyModel;
 import ru.mail.timelimit.client.model.javabeans.Book;
 import ru.mail.timelimit.client.model.javabeans.Chapter;
@@ -43,7 +41,7 @@ public class ClientController implements Controller, PropertyChangeListener
                     {
                         model.addBook(bookId, bookTitle, bookAuthor, bookIsbn, bookAnnotation);
                     }
-                    catch(BeanAlreadyExistsException exception)
+                    catch(Exception exception)
                     {
                         view.showErrorMessage(exception.getMessage());
                     }
@@ -95,7 +93,7 @@ public class ClientController implements Controller, PropertyChangeListener
                         {
                             model.addChapter(chapterId, bookIdOfChapterId, chapterTitle, chapterText);
                         }
-                        catch(BeanAlreadyExistsException | BeanNotFoundException exception)
+                        catch(Exception exception)
                         {
                             view.showErrorMessage(exception.getMessage());
                         }
@@ -123,18 +121,19 @@ public class ClientController implements Controller, PropertyChangeListener
                 else
                 {
                     Integer bookId = treeNodeToBookId.get(selected);
+                    System.out.println(" bookId " + bookId);
                     if (bookId != null)
                     {
-                        Book book = model.getBook(bookId);
-                        view.showUpdateBookDialog(book.getTitle(), book.getAuthor(), book.getIsbn(), book.getAnnotation());
+                        model.getBook(bookId);
+                        model.lockBook(bookId);
                     }
                     else
                     {
                         Integer chapterId = treeNodeToChapterId.get(selected);
                         if (chapterId != null)
                         {
-                            Chapter chapter = model.getChapter(chapterId);
-                            view.showUpdateChapterDialog(chapter.getBook().getBookId(), chapter.getTitle(), chapter.getChapterText());
+                            model.getChapter(chapterId);
+                            model.lockChapter(chapterId);
                         }
                         else
                         {
@@ -162,10 +161,11 @@ public class ClientController implements Controller, PropertyChangeListener
                 String bookAnnotation = view.getUpdateBookAnnotation().getText();
                 try
                 {
+                    model.unlockBook(bookId);
                     model.updateBook(bookId, bookTitle, bookAuthor, bookIsbn, bookAnnotation);
                     view.hideUpdateBookDialog();
                 }
-                catch(BeanNotFoundException exception)
+                catch(Exception exception)
                 {
                     view.showErrorMessage(exception.getMessage());
                 }
@@ -199,10 +199,11 @@ public class ClientController implements Controller, PropertyChangeListener
                     String chapterText = view.getUpdateChapterText().getText();
                     try
                     {
+                        model.unlockChapter(chapterId);
                         model.updateChapter(chapterId, bookIdOfChapterId, chapterTitle, chapterText);
                         view.hideUpdateChapterDialog();
                     }
-                    catch(BeanNotFoundException exception)
+                    catch(Exception exception)
                     {
                         view.showErrorMessage(exception.getMessage());
                     }
@@ -247,7 +248,7 @@ public class ClientController implements Controller, PropertyChangeListener
                             }
                         }
                     }
-                    catch (BeanNotFoundException exception)
+                    catch (Exception exception)
                     { 
                         view.showErrorMessage(exception.getMessage());
                     }
@@ -255,6 +256,34 @@ public class ClientController implements Controller, PropertyChangeListener
             }
             private static final String OBJECT_FOR_UPDATE_NOT_SPECIFIED_EXCEPTION_MESSAGE = "Выберите, пожалуйста, сначала элемент дерева";
             private static final String OBJECT_FOR_UPDATE_IS_UNKNOWN_EXCEPTION_MESSAGE = "Выбранный элемент дерева не является ни книгой, ни главой";
+        });
+        
+        view.getCancelUpdateBook().addActionListener(new ActionListener() 
+        {
+
+            @Override
+            public void actionPerformed(ActionEvent e) 
+            {
+                DefaultMutableTreeNode selected = (DefaultMutableTreeNode)
+                        view.getBooksAndChapters().getLastSelectedPathComponent();
+                
+                Integer bookId = treeNodeToBookId.get(selected);
+                model.unlockBook(bookId);
+            }   
+        });
+        
+        view.getCancelUpdateChapter().addActionListener(new ActionListener() 
+        {
+
+            @Override
+            public void actionPerformed(ActionEvent e) 
+            {
+                DefaultMutableTreeNode selected = (DefaultMutableTreeNode)
+                        view.getBooksAndChapters().getLastSelectedPathComponent();
+                
+                Integer chapterId = treeNodeToChapterId.get(selected);
+                model.unlockChapter(chapterId);
+            }   
         });
      
      /*   view.getSaveBooksAndChapters().addActionListener(new ActionListener() 
@@ -420,7 +449,7 @@ public class ClientController implements Controller, PropertyChangeListener
                 public void run() 
                 {
                     JTree tree = view.getBooksAndChapters();
-                    DefaultMutableTreeNode bookNode = bookIdToTreeNode.get(chapter.getBook().getBookId());
+                    DefaultMutableTreeNode bookNode = bookIdToTreeNode.get(chapter.getBookId());
                     bookNode.add(treeNode);
                     DefaultTreeModel treeModel = (DefaultTreeModel) tree.getModel();
                     treeModel.reload(bookNode);
@@ -429,8 +458,8 @@ public class ClientController implements Controller, PropertyChangeListener
         }
         else if ("DeleteChapter".equalsIgnoreCase(eventName))
         {
-            final Chapter oldChapter = (Chapter) event.getOldValue();
-            final DefaultMutableTreeNode chapterTreeNode = chapterIdToTreeNode.remove(oldChapter.getChapterId());
+            final Integer oldChapterId = (Integer) event.getOldValue();
+            final DefaultMutableTreeNode chapterTreeNode = chapterIdToTreeNode.remove(oldChapterId);
             treeNodeToChapterId.remove(chapterTreeNode);
             SwingUtilities.invokeLater(new Runnable() 
             {
@@ -449,8 +478,8 @@ public class ClientController implements Controller, PropertyChangeListener
         }
         else if ("DeleteBook".equalsIgnoreCase(eventName))
         {
-            final Book oldBook = (Book) event.getOldValue();
-            final DefaultMutableTreeNode bookTreeNode = bookIdToTreeNode.remove(oldBook.getBookId());
+            final Integer oldBookId = (Integer) event.getOldValue();
+            final DefaultMutableTreeNode bookTreeNode = bookIdToTreeNode.remove(oldBookId);
             treeNodeToBookId.remove(bookTreeNode);
             SwingUtilities.invokeLater(new Runnable() 
             {
@@ -464,6 +493,32 @@ public class ClientController implements Controller, PropertyChangeListener
                     bookTreeNode.removeFromParent();
                     treeModel.reload((DefaultMutableTreeNode) treeModel.getRoot());
                 } 
+            });
+        }
+        else if ("GetBook".equalsIgnoreCase(eventName))
+        {
+            final Book book = (Book) event.getOldValue();
+            SwingUtilities.invokeLater(new Runnable() 
+            {
+
+                @Override
+                public void run() 
+                {
+                    view.showUpdateBookDialog(book.getTitle(), book.getAuthor(), book.getIsbn(), book.getAnnotation());
+                }
+            });
+        }
+        else if ("GetChapter".equalsIgnoreCase(eventName))
+        {
+            final Chapter chapter = (Chapter) event.getOldValue();
+            SwingUtilities.invokeLater(new Runnable() 
+            {
+
+                @Override
+                public void run() 
+                {
+                    view.showUpdateChapterDialog(chapter.getBookId(), chapter.getTitle(), chapter.getChapterText());
+                }
             });
         }
     }

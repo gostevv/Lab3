@@ -190,6 +190,18 @@ public class SimpleView implements View
     {
         chapterUpdateForm.hide();
     }
+    
+    @Override
+    public JButton getCancelUpdateBook()
+    {
+        return bookUpdateForm.cancel;
+    }
+    
+    @Override 
+    public JButton getCancelUpdateChapter()
+    {
+        return chapterUpdateForm.cancel;
+    }
 
     public SimpleView()
     {

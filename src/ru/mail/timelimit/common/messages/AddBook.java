@@ -10,13 +10,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "AddBook")
-public class AddBook 
+public class AddBook
 {
-    private int bookId;
-    private String title;
-    private String author;
-    private String isbn;
-    private String annotation;
 
     public void setAnnotation(String annotation) {
         this.annotation = annotation;
@@ -91,4 +86,9 @@ public class AddBook
         return (AddBook) unmarshaller.unmarshal(new ByteArrayInputStream(xml.getBytes()));
     }
     
+    private int bookId;
+    private String title;
+    private String author;
+    private String isbn;
+    private String annotation;
 }

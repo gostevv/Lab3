@@ -33,8 +33,8 @@ class ChapterUpdateForm
 
         updateChapter = new JButton("Обновить главу");
         panel.add(updateChapter);
-        JButton discard = new JButton("Отменить");
-        panel.add(discard);
+        cancel = new JButton("Отменить");
+        panel.add(cancel);
 
         SpringUtilities.makeCompactGrid(panel,
                 4, 2,
@@ -45,7 +45,7 @@ class ChapterUpdateForm
 
         dialog.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         dialog.pack();
-        discard.addActionListener(new ActionListener()
+        cancel.addActionListener(new ActionListener()
         {
 
             @Override
@@ -76,6 +76,7 @@ class ChapterUpdateForm
     final JTextField bookIdOfChapter;
     final JTextField chapterTitle;
     final JTextField chapterText;
+    final JButton cancel;
     final JDialog dialog;
     private static final String EMPTY_STRING = "";
 }

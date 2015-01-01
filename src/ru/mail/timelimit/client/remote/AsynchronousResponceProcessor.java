@@ -32,6 +32,7 @@ public class AsynchronousResponceProcessor
     
     void process(String xmlResponce) throws Exception
     {
+        System.out.println("Receive responce from server" + xmlResponce);
         Document xml = documentBuilder.parse(new ByteArrayInputStream(xmlResponce.getBytes()));
         Element xmlRootElement = xml.getDocumentElement();
         String requestName = xmlRootElement.getTagName();
@@ -66,7 +67,8 @@ public class AsynchronousResponceProcessor
             ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
             JAXBContext context = JAXBContext.newInstance(AddChapter.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-            AddChapter cs = (AddChapter) unmarshaller.unmarshal(bais);
+            AddChapter addChapter = (AddChapter) unmarshaller.unmarshal(bais);
+            model.addChapterLoopback(addChapter.getChapterId(), addChapter.getBookId(), addChapter.getTitle(), addChapter.getChapterText());
         }
     }
     
@@ -78,7 +80,8 @@ public class AsynchronousResponceProcessor
             ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
             JAXBContext context = JAXBContext.newInstance(DeleteBook.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-            DeleteBook cs = (DeleteBook) unmarshaller.unmarshal(bais);
+            DeleteBook deleteBook = (DeleteBook) unmarshaller.unmarshal(bais);
+            model.deleteBookLoopback(deleteBook.getBookId());
         }
     }
     
@@ -90,7 +93,8 @@ public class AsynchronousResponceProcessor
             ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
             JAXBContext context = JAXBContext.newInstance(DeleteChapter.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-            DeleteChapter cs = (DeleteChapter) unmarshaller.unmarshal(bais);
+            DeleteChapter deleteChapter = (DeleteChapter) unmarshaller.unmarshal(bais);
+            model.deleteChapterLoopback(deleteChapter.getChapterId());
         }
     }
     
@@ -102,7 +106,8 @@ public class AsynchronousResponceProcessor
             ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
             JAXBContext context = JAXBContext.newInstance(GetBook.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-            GetBook cs = (GetBook) unmarshaller.unmarshal(bais);
+            GetBook getBook = (GetBook) unmarshaller.unmarshal(bais);
+            model.getBookLoopback(getBook.getBookId(), getBook.getTitle(), getBook.getAuthor(), getBook.getIsbn(), getBook.getAnnotation());
         }
     }
     
@@ -114,10 +119,13 @@ public class AsynchronousResponceProcessor
             ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
             JAXBContext context = JAXBContext.newInstance(GetChapter.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-            GetChapter cs = (GetChapter) unmarshaller.unmarshal(bais);
+            GetChapter getChapter = (GetChapter) unmarshaller.unmarshal(bais);
+            model.getChapterLoopback(getChapter.getChapterId(), getChapter.getBookId(), 
+                    getChapter.getTitle(), getChapter.getChapterText());
         }
     }
     
+    /*
     private class UpdateBookXmlResponceProcessor implements XmlResponceProcessor
     {
         @Override
@@ -140,7 +148,7 @@ public class AsynchronousResponceProcessor
             Unmarshaller unmarshaller = context.createUnmarshaller();
             UpdateChapter cs = (UpdateChapter) unmarshaller.unmarshal(bais);
         }
-    }
+    }*/
     
     private final ServerProxyModelLoopback model;
     private final DocumentBuilder documentBuilder;
@@ -154,8 +162,8 @@ public class AsynchronousResponceProcessor
                     put("DeleteChapter", new DeleteChapterXmlResponceProcessor());
                     put("GetBook", new GetBookXmlResponceProcessor());
                     put("GetChapter", new GetChapterXmlResponceProcessor());
-                    put("UpdateBook", new UpdateBookXmlResponceProcessor());
-                    put("UpdateChapter", new UpdateChapterXmlResponceProcessor());
+/*                    put("UpdateBook", new UpdateBookXmlResponceProcessor());
+                    put("UpdateChapter", new UpdateChapterXmlResponceProcessor());*/
                 }
             };
 }

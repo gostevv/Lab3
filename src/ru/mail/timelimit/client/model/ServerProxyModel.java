@@ -7,13 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import javax.xml.bind.JAXBException;
-import ru.mail.timelimit.client.exceptions.BeanAlreadyExistsException;
-import ru.mail.timelimit.client.exceptions.BeanNotFoundException;
-import ru.mail.timelimit.client.model.javabeans.Book;
-import ru.mail.timelimit.client.model.javabeans.Chapter;
-import ru.mail.timelimit.common.messages.AddBook;
-import ru.mail.timelimit.common.messages.GetPort;
-import ru.mail.timelimit.common.messages.ReceivePort;
+import ru.mail.timelimit.common.messages.*;
 import ru.mail.timelimit.common.utils.SocketReadWriteHelper;
 
 public class ServerProxyModel
@@ -52,7 +46,7 @@ public class ServerProxyModel
         serverProxyModelLoopback = new ServerProxyModelLoopback(clientSocket);
     }
     
-    public void addBook(int bookId, String title, String author, String isbn, String annotation) throws BeanAlreadyExistsException
+    public void addBook(int bookId, String title, String author, String isbn, String annotation)
     {
         AddBook addBook = new AddBook(bookId, title, author, isbn, annotation);
         
@@ -60,6 +54,96 @@ public class ServerProxyModel
         try
         {
             xml = AddBook.toXml(addBook);
+        }
+        catch (JAXBException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+        
+        try
+        {
+            DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
+            das.writeInt(xml.length());
+            das.writeBytes(xml);
+        }
+        catch(IOException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    public void addChapter(int chapterId, int bookId, String title, String chapterText)
+    {
+        AddChapter addChapter = new AddChapter(chapterId, bookId, title, chapterText);
+        
+        String xml = null;
+        try
+        {
+            xml = AddChapter.toXml(addChapter);
+        }
+        catch (JAXBException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+        
+        try
+        {
+            DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
+            das.writeInt(xml.length());
+            das.writeBytes(xml);
+        }
+        catch(IOException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+    } 
+    
+    public void updateBook(int bookId, String title, String author, String isbn, String annotation)
+    {
+        deleteBook(bookId);
+        addBook(bookId, title, author, isbn, annotation);
+    }
+
+    public void updateChapter(int chapterId, int bookId, String title, String chapterText)
+    {
+        deleteChapter(chapterId);
+        addChapter(chapterId, bookId, title, chapterText);
+    } 
+    
+    public void deleteBook(int bookId)
+    {
+        DeleteBook deleteBook = new DeleteBook(bookId);
+        
+        String xml = null;
+        try
+        {
+            xml = DeleteBook.toXml(deleteBook);
+        }
+        catch (JAXBException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+        
+        try
+        {
+            DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
+            das.writeInt(xml.length());
+            das.writeBytes(xml);
+        }
+        catch(IOException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+    }
+    
+    public void deleteChapter(int chapterId)
+    {
+        DeleteChapter deleteChapter = new DeleteChapter(chapterId);
+        
+        String xml = null;
+        try
+        {
+            xml = DeleteChapter.toXml(deleteChapter);
         }
         catch (JAXBException exception)
         {
@@ -74,91 +158,166 @@ public class ServerProxyModel
         }
         catch(IOException exception)
         {
+            throw new RuntimeException(exception);
+        }
+    }
+    
+    public void getBook(int bookId)
+    {
+        GetBook getBook = GetBook.ofRequest(bookId);
+        
+        String xml = null;
+        try
+        {
+            xml = GetBook.toXml(getBook);
+        }
+        catch (JAXBException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+        
+        try
+        {
+            System.out.println(" GetBook " + xml);
+            DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
+            das.writeInt(xml.length());
+            das.writeBytes(xml);
+            System.out.println(" GetBook written ");
+        }
+        catch(IOException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+    }
+    
+    public void getChapter(int chapterId)
+    {
+        GetChapter getChapter = GetChapter.ofRequest(chapterId);
+        
+        String xml = null;
+        try
+        {
+            xml = GetChapter.toXml(getChapter);
+        }
+        catch (JAXBException exception)
+        {
+            throw new RuntimeException();
+        }
+        
+        try
+        {
+            DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
+            das.writeInt(xml.length());
+            das.writeBytes(xml);
+        }
+        catch(IOException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+    }
+    
+    public void lockBook(int bookId) 
+    {
+        LockBook lockBook = new LockBook(bookId);
+        
+        String xml = null;
+        try
+        {
+            xml = LockBook.toXml(lockBook);
+        }
+        catch (JAXBException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+        
+        try
+        {
+            DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
+            das.writeInt(xml.length());
+            das.writeBytes(xml);
+        }
+        catch(IOException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    public void unlockBook(int bookId) 
+    {
+        UnlockBook unlockBook = new UnlockBook(bookId);
+        
+        String xml = null;
+        try
+        {
+            xml = UnlockBook.toXml(unlockBook);
+        }
+        catch (JAXBException exception)
+        {
+            throw new RuntimeException(exception);
+        }
+        
+        try
+        {
+            DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
+            das.writeInt(xml.length());
+            das.writeBytes(xml);
+        }
+        catch(IOException exception)
+        {
             throw new RuntimeException();
         }
     }
 
-    public void addChapter(int chapterId, int bookId, String title, String chapterText) throws BeanAlreadyExistsException, BeanNotFoundException
+    public void lockChapter(int chapterId) 
     {
-        if (idToChapter.get(chapterId) != null)
-        {
-            throw new BeanAlreadyExistsException("Глава с Id " + chapterId + " уже существует");
-        }
+        LockChapter lockChapter = new LockChapter(chapterId);
         
-        if (idToBook.get(bookId) == null)
-        {
-            throw new BeanNotFoundException("Попытка вставить главу ссылающуюся на несуществующую книгу с Id " + bookId);
-        }
-        
-        Chapter chapter = new Chapter(chapterId, idToBook.get(bookId), title, chapterText);
-        idToChapter.put(chapterId, chapter);
-        
-        Book book = idToBook.get(bookId);
-        Collection<Chapter> bookChapters = book.getChapters();
-        bookChapters.add(chapter);
-        book.setChapters(bookChapters);
-        
-        //propertyChangeCaller.firePropertyChange("AddChapter", null, chapter);
-    } 
-    
-    public void updateBook(int bookId, String title, String author, String isbn, String annotation) throws BeanNotFoundException
-    {
-        deleteBook(bookId);
+        String xml = null;
         try
         {
-            addBook(bookId, title, author, isbn, annotation);
+            xml = LockChapter.toXml(lockChapter);
         }
-        catch (BeanAlreadyExistsException exception)
+        catch (JAXBException exception)
         {
             throw new RuntimeException(exception);
+        }
+        
+        try
+        {
+            DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
+            das.writeInt(xml.length());
+            das.writeBytes(xml);
+        }
+        catch(IOException exception)
+        {
+            throw new RuntimeException();
         }
     }
 
-    public void updateChapter(int chapterId, int bookId, String title, String chapterText) throws BeanNotFoundException
+    public void unlockChapter(int chapterId) 
     {
-        deleteChapter(chapterId);
+        UnlockChapter unlockChapter = new UnlockChapter(chapterId);
+        
+        String xml = null;
         try
         {
-            addChapter(chapterId, bookId, title, chapterText);
+            xml = UnlockChapter.toXml(unlockChapter);
         }
-        catch (BeanAlreadyExistsException exception)
+        catch (JAXBException exception)
         {
             throw new RuntimeException(exception);
         }
-    } 
-    
-    public void deleteBook(int bookId) throws BeanNotFoundException
-    {
-        if (idToBook.get(bookId) == null)
+        
+        try
         {
-            throw new BeanNotFoundException("Книги с Id " + bookId + " не существует");
+            DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
+            das.writeInt(xml.length());
+            das.writeBytes(xml);
         }
-        
-        for (Chapter chapter : idToBook.get(bookId).getChapters())
+        catch(IOException exception)
         {
-            deleteChapter(chapter.getChapterId()); 
+            throw new RuntimeException();
         }
-        
-        Book book = idToBook.remove(bookId);
-        
-        //propertyChangeCaller.firePropertyChange("DeleteBook", book, null);
-    }
-    
-    public void deleteChapter(int chapterId) throws BeanNotFoundException
-    {
-        if (idToChapter.get(chapterId) == null)
-        {
-            throw new BeanNotFoundException("Главы с Id " + chapterId + " не существует");
-        }
-        
-        Chapter chapter = idToChapter.remove(chapterId);
-        
-        Book book = chapter.getBook();
-        Collection<Chapter> bookChapters = book.getChapters();
-        bookChapters.remove(chapter); 
-        book.setChapters(bookChapters);
-        
-        //propertyChangeCaller.firePropertyChange("DeleteChapter", chapter, null);
     }
     
     public void addListener(PropertyChangeListener propertyChangeListener)
@@ -166,68 +325,7 @@ public class ServerProxyModel
         serverProxyModelLoopback.addListener(propertyChangeListener);
     }
     
-    public Book getBook(int bookId)
-    {
-        return idToBook.get(bookId);
-    }
-    
-    public Chapter getChapter(int chapterId)
-    {
-        return idToChapter.get(chapterId);
-    }
-/*    
-    public void destroyModel()
-    {
-        Collection <Integer> idsToDelete = new HashSet(idToBook.keySet());
-        for (int bookId : idsToDelete)
-        {
-            try 
-            {
-                deleteBook(bookId);
-            } 
-            catch (BeanNotFoundException exception)
-            {
-                throw new RuntimeException(exception);
-            }
-        }
-    }
-    
-    public void loadModel()
-    {
-        for (Book book : idToBook.values())
-        {
-            propertyChangeCaller.firePropertyChange("AddBook", null, book);
-        }
-        for (Chapter chapter : idToChapter.values())
-        {
-            propertyChangeCaller.firePropertyChange("AddChapter", null, chapter);
-        }
-    }*/
-    
-    public void lockBook(int bookId) 
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void unlockBook(int bookId) 
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void lockChapter(int chapterId) 
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-
-    public void unlockChapter(int chapterId) 
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-    
     private ServerProxyModelLoopback serverProxyModelLoopback;
-    private Map<Integer, Book> idToBook = new HashMap<>();
-    private Map<Integer, Chapter> idToChapter = new HashMap<>();
     private final Socket clientSocket;
     
     private static final Integer SERVER_PUBLIC_PORT = 4444;

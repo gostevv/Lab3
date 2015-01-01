@@ -10,7 +10,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "ReceivePort")
-public class ReceivePort 
+public class ReceivePort
 {
     
     public ReceivePort()

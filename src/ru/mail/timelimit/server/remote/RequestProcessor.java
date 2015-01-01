@@ -18,14 +18,17 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import ru.mail.timelimit.common.messages.*;
+import ru.mail.timelimit.server.controller.session.ClientSession;
 import ru.mail.timelimit.server.model.Model;
 
 public class RequestProcessor 
 {
 
-    public RequestProcessor(Model model) throws ParserConfigurationException
+    public RequestProcessor(Model model, ClientSession clientSession) throws ParserConfigurationException
     {
         this.model = model;
+        this.clientSession = clientSession;
         DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
         documentBuilder = documentBuilderFactory.newDocumentBuilder();
     }
@@ -51,7 +54,7 @@ public class RequestProcessor
         public void process(String xmlResponce) throws Exception
         {
             AddBook addBook = AddBook.fromXml(xmlResponce);
-            model.addBook(addBook.getBookId(), addBook.getTitle(), addBook.getAuthor(), addBook.getIsbn(), addBook.getAnnotation());
+            model.addBook(clientSession, addBook.getBookId(), addBook.getTitle(), addBook.getAuthor(), addBook.getIsbn(), addBook.getAnnotation());
         }
         
     }
@@ -61,10 +64,8 @@ public class RequestProcessor
         @Override
         public void process(String xmlResponce) throws Exception
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
-            JAXBContext context = JAXBContext.newInstance(AddChapter.class);
-            Unmarshaller unmarshaller = context.createUnmarshaller();
-            AddChapter cs = (AddChapter) unmarshaller.unmarshal(bais);
+            AddChapter addChapter = AddChapter.fromXml(xmlResponce);
+            model.addChapter(clientSession, addChapter.getChapterId(), addChapter.getBookId(), addChapter.getTitle(), addChapter.getChapterText());
         }
     }
     
@@ -73,10 +74,8 @@ public class RequestProcessor
         @Override
         public void process(String xmlResponce) throws Exception
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
-            JAXBContext context = JAXBContext.newInstance(DeleteBook.class);
-            Unmarshaller unmarshaller = context.createUnmarshaller();
-            DeleteBook cs = (DeleteBook) unmarshaller.unmarshal(bais);
+            DeleteBook deleteBook = DeleteBook.fromXml(xmlResponce);
+            model.deleteBook(clientSession, deleteBook.getBookId());
         }
     }
     
@@ -85,10 +84,8 @@ public class RequestProcessor
         @Override
         public void process(String xmlResponce) throws Exception
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
-            JAXBContext context = JAXBContext.newInstance(DeleteChapter.class);
-            Unmarshaller unmarshaller = context.createUnmarshaller();
-            DeleteChapter cs = (DeleteChapter) unmarshaller.unmarshal(bais);
+            DeleteChapter deleteChapter = DeleteChapter.fromXml(xmlResponce);
+            model.deleteChapter(clientSession, deleteChapter.getChapterId());
         }
     }
     
@@ -97,10 +94,8 @@ public class RequestProcessor
         @Override
         public void process(String xmlResponce) throws Exception
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
-            JAXBContext context = JAXBContext.newInstance(GetBook.class);
-            Unmarshaller unmarshaller = context.createUnmarshaller();
-            GetBook cs = (GetBook) unmarshaller.unmarshal(bais);
+            GetBook getBook = GetBook.fromXml(xmlResponce);
+            model.getBook(clientSession, getBook.getBookId());
         }
     }
     
@@ -109,13 +104,53 @@ public class RequestProcessor
         @Override
         public void process(String xmlResponce) throws Exception
         {
-            ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
-            JAXBContext context = JAXBContext.newInstance(GetChapter.class);
-            Unmarshaller unmarshaller = context.createUnmarshaller();
-            GetChapter cs = (GetChapter) unmarshaller.unmarshal(bais);
+            GetChapter getChapter = GetChapter.fromXml(xmlResponce);
+            model.getChapter(clientSession, getChapter.getChapterId());
         }
     }
     
+    private class LockChapterXmlRequestProcessor implements XmlRequestProcessor
+    {
+        @Override
+        public void process(String xmlResponce) throws Exception
+        {
+            LockChapter lockChapter = LockChapter.fromXml(xmlResponce);
+            model.lockChapter(clientSession, lockChapter.getChapterId());
+        }
+    }
+    
+    private class UnlockChapterXmlRequestProcessor implements XmlRequestProcessor
+    {
+        @Override
+        public void process(String xmlResponce) throws Exception
+        {
+            UnlockChapter unlockChapter = UnlockChapter.fromXml(xmlResponce);
+            model.unlockChapter(clientSession, unlockChapter.getChapterId());
+        }
+    }
+    
+    private class LockBookXmlRequestProcessor implements XmlRequestProcessor
+    {
+        @Override
+        public void process(String xmlResponce) throws Exception
+        {
+            LockBook lockBook = LockBook.fromXml(xmlResponce);
+            model.lockBook(clientSession, lockBook.getBookId());
+        }
+    }
+    
+    private class UnlockBookXmlRequestProcessor implements XmlRequestProcessor
+    {
+        @Override
+        public void process(String xmlResponce) throws Exception
+        {
+            UnlockBook unlockBook = UnlockBook.fromXml(xmlResponce);
+            model.unlockBook(clientSession, unlockBook.getBookId());
+        }
+    }
+    
+    
+    /*
     private class UpdateBookXmlRequestProcessor implements XmlRequestProcessor
     {
         @Override
@@ -138,9 +173,10 @@ public class RequestProcessor
             Unmarshaller unmarshaller = context.createUnmarshaller();
             UpdateChapter cs = (UpdateChapter) unmarshaller.unmarshal(bais);
         }
-    }
+    }*/
     
     private final Model model;
+    private final ClientSession clientSession;
     private final DocumentBuilder documentBuilder;
     private final Map<String, XmlRequestProcessor> requstNameToRequestClass = 
             new HashMap<String, XmlRequestProcessor>()
@@ -152,8 +188,13 @@ public class RequestProcessor
                     put("DeleteChapter", new DeleteChapterXmlRequestProcessor());
                     put("GetBook", new GetBookXmlRequestProcessor());
                     put("GetChapter", new GetChapterXmlRequestProcessor());
-                    put("UpdateBook", new UpdateBookXmlRequestProcessor());
-                    put("UpdateChapter", new UpdateChapterXmlRequestProcessor());
+                    put("LockBook", new LockBookXmlRequestProcessor());
+                    put("UnlockBook", new UnlockBookXmlRequestProcessor());
+                    put("LockChapter", new LockChapterXmlRequestProcessor());
+                    put("UnlockChapter", new UnlockChapterXmlRequestProcessor());
+                    
+                    /*put("UpdateBook", new UpdateBookXmlRequestProcessor());
+                    put("UpdateChapter", new UpdateChapterXmlRequestProcessor());*/
                 }
             };
 }

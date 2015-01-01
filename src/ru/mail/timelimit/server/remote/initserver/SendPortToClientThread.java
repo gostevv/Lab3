@@ -1,4 +1,4 @@
-package ru.mail.timelimit.server.remote;
+package ru.mail.timelimit.server.remote.initserver;
 
 import java.io.*;
 import java.net.Socket;
@@ -10,10 +10,10 @@ import ru.mail.timelimit.common.messages.GetPort;
 import ru.mail.timelimit.common.messages.ReceivePort;
 import ru.mail.timelimit.server.controller.ServerController;
 
-public class PublicPortClientThread extends Thread
+public class SendPortToClientThread extends Thread
 {
     
-    public PublicPortClientThread (Socket clientSocket, ServerController controller)
+    public SendPortToClientThread (Socket clientSocket, ServerController controller)
     {
         this.clientSocket = clientSocket;
         this.controller = controller;

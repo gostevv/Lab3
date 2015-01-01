@@ -1,13 +1,13 @@
-package ru.mail.timelimit.server.remote;
+package ru.mail.timelimit.server.remote.initserver;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import ru.mail.timelimit.server.controller.ServerController;
 
-public class PublicPortListenerThread extends Thread
+public class DemonStartThread extends Thread
 {
-    public PublicPortListenerThread(ServerController serverController) throws Exception
+    public DemonStartThread(ServerController serverController) throws Exception
     {
         serverSocketPublicPort = new ServerSocket(PUBLIC_PORT);
         this.serverController = serverController;
@@ -23,8 +23,8 @@ public class PublicPortListenerThread extends Thread
                 Socket clientSocket = serverSocketPublicPort.accept();
                 System.out.println("Accepted socket");
                 
-                PublicPortClientThread publicPortClientThread = new PublicPortClientThread(clientSocket, serverController);
-                publicPortClientThread.start();
+                SendPortToClientThread sendPortToClientThread = new SendPortToClientThread(clientSocket, serverController);
+                sendPortToClientThread.start();
             }
         }
         catch (Exception ex)

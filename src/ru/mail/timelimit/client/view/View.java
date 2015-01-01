@@ -33,6 +33,7 @@ public interface View
     public JTextField getUpdateBookTitle();
     public JTextField getUpdateBookIsbn();
     public JTextField getUpdateBookAuthor();
+    public JButton getCancelUpdateBook();
     
     public JButton getUpdateChapter();
     public void showUpdateChapterDialog(int bookIdOfChapter, String chapterTitle, String chapterText);
@@ -40,6 +41,7 @@ public interface View
     public JTextField getUpdateBookIdOfChapter();
     public JTextField getUpdateChapterTitle();
     public JTextField getUpdateChapterText();
+    public JButton getCancelUpdateChapter();
     
     public JButton getDelete();
     

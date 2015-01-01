@@ -1,11 +1,11 @@
 package ru.mail.timelimit.server.model;
 
 import java.beans.PropertyChangeListener;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import javax.swing.event.SwingPropertyChangeSupport;
+import ru.mail.timelimit.server.controller.Command;
+import ru.mail.timelimit.server.controller.ModelObserver;
+import ru.mail.timelimit.server.controller.session.ClientSession;
 import ru.mail.timelimit.server.model.javabeans.*;
 import ru.mail.timelimit.server.exceptions.*;
 
@@ -13,46 +13,48 @@ public class SimpleModel implements Model
 {
 
     @Override
-    public void addBook(int bookId, String title, String author, String isbn, String annotation) throws BeanAlreadyExistsException
+    public synchronized void addBook(ClientSession originator, int bookId, String title, String author, String isbn, String annotation) throws BeanAlreadyExistsException
     {
         if (idToBook.get(bookId) != null)
         {
-            throw new BeanAlreadyExistsException("Книга с Id " + bookId + " уже существует");
+            throw new BeanAlreadyExistsException("Book with Id " + bookId + " already exists.");
         }
-        
+
         Book book = new Book(bookId, title, author, isbn, annotation);
         idToBook.put(bookId, book);
+        modelObserver.receiveCommandFromModel(Command.AddBook, book, originator);
     }
 
     @Override
-    public void addChapter(int chapterId, int bookId, String title, String chapterText) throws BeanAlreadyExistsException, BeanNotFoundException
+    public synchronized void addChapter(ClientSession originator, int chapterId, int bookId, String title, String chapterText) throws BeanAlreadyExistsException, BeanNotFoundException
     {
         if (idToChapter.get(chapterId) != null)
         {
-            throw new BeanAlreadyExistsException("Глава с Id " + chapterId + " уже существует");
+            throw new BeanAlreadyExistsException("Chapter with Id " + chapterId + " already exists.");
         }
-        
+
         if (idToBook.get(bookId) == null)
         {
-            throw new BeanNotFoundException("Попытка вставить главу ссылающуюся на несуществующую книгу с Id " + bookId);
+            throw new BeanNotFoundException("An attempt to insert a chapter which references to a book which doesn't exist. Book Id - " + bookId);
         }
-        
+
         Chapter chapter = new Chapter(chapterId, idToBook.get(bookId), title, chapterText);
         idToChapter.put(chapterId, chapter);
-        
+
         Book book = idToBook.get(bookId);
         Collection<Chapter> bookChapters = book.getChapters();
         bookChapters.add(chapter);
         book.setChapters(bookChapters);
-    } 
+        modelObserver.receiveCommandFromModel(Command.AddChapter, chapter, originator);
+    }
     
     @Override
-    public void updateBook(int bookId, String title, String author, String isbn, String annotation) throws BeanNotFoundException
+    public synchronized void updateBook(ClientSession originator, int bookId, String title, String author, String isbn, String annotation) throws BeanNotFoundException, LockException
     {
-        deleteBook(bookId);
+        deleteBook(originator, bookId);
         try
         {
-            addBook(bookId, title, author, isbn, annotation);
+            addBook(originator, bookId, title, author, isbn, annotation);
         }
         catch (BeanAlreadyExistsException exception)
         {
@@ -61,12 +63,12 @@ public class SimpleModel implements Model
     }
 
     @Override
-    public void updateChapter(int chapterId, int bookId, String title, String chapterText) throws BeanNotFoundException
+    public synchronized void updateChapter(ClientSession originator, int chapterId, int bookId, String title, String chapterText) throws BeanNotFoundException, LockException
     {
-        deleteChapter(chapterId);
+        deleteChapter(originator, chapterId);
         try
         {
-            addChapter(chapterId, bookId, title, chapterText);
+            addChapter(originator, chapterId, bookId, title, chapterText);
         }
         catch (BeanAlreadyExistsException exception)
         {
@@ -75,58 +77,126 @@ public class SimpleModel implements Model
     } 
     
     @Override 
-    public void deleteBook(int bookId) throws BeanNotFoundException
+    public synchronized void deleteBook(ClientSession originator, int bookId) throws BeanNotFoundException, LockException
     {
         if (idToBook.get(bookId) == null)
         {
-            throw new BeanNotFoundException("Книги с Id " + bookId + " не существует");
+            throw new BeanNotFoundException("Book with Id " + bookId + " doesn't exist.");
+        }
+
+        if (lockedChapters.contains(bookId))
+        {
+            throw new LockException("Book is locked");
         }
         
         for (Chapter chapter : idToBook.get(bookId).getChapters())
         {
-            deleteChapter(chapter.getChapterId()); 
+            deleteChapter(originator, chapter.getChapterId()); 
         }
-        
+
         Book book = idToBook.remove(bookId);
+        modelObserver.receiveCommandFromModel(Command.DeleteBook, book, originator);
     }
     
     @Override 
-    public void deleteChapter(int chapterId) throws BeanNotFoundException
+    public synchronized void deleteChapter(ClientSession originator, int chapterId) throws BeanNotFoundException, LockException
     {
         if (idToChapter.get(chapterId) == null)
         {
-            throw new BeanNotFoundException("Главы с Id " + chapterId + " не существует");
+            throw new BeanNotFoundException("Chapter with Id " + chapterId + " doesn't exist");
         }
         
+        if (lockedChapters.contains(chapterId))
+        {
+            throw new LockException("Chapter is locked");
+        }
+
         Chapter chapter = idToChapter.remove(chapterId);
-        
+
         Book book = chapter.getBook();
         Collection<Chapter> bookChapters = book.getChapters();
         bookChapters.remove(chapter); 
         book.setChapters(bookChapters);
-    }
-    
-    @Override
-    public void addListener(PropertyChangeListener propertyChangeListener)
-    { 
-        propertyChangeCaller = new SwingPropertyChangeSupport(this);
-        propertyChangeCaller.addPropertyChangeListener(propertyChangeListener);
-    }
-    
-    @Override
-    public Book getBook(int bookId)
-    {
-        return idToBook.get(bookId);
-    }
-    
-    @Override
-    public Chapter getChapter(int chapterId)
-    {
-        return idToChapter.get(chapterId);
-    }
         
-    private Map<Integer, Book> idToBook = new HashMap<>();
-    private Map<Integer, Chapter> idToChapter = new HashMap<>();
-    private transient SwingPropertyChangeSupport propertyChangeCaller = new SwingPropertyChangeSupport(this);
+        modelObserver.receiveCommandFromModel(Command.DeleteChapter, chapter, originator);
+    }
+    
+    @Override
+    public void addListener(ModelObserver modelObserver)
+    { 
+        this.modelObserver = modelObserver;
+    }
+    
+    @Override
+    public synchronized void getBook(ClientSession originator, int bookId) throws BeanNotFoundException
+    {
+        Book book = idToBook.get(bookId);
+        if (book == null)
+        {
+            throw new BeanNotFoundException("Book with Id " + bookId + " was not found.");
+        }
+        modelObserver.receiveCommandFromModel(Command.GetBook, book, originator);
+    }
+    
+    @Override
+    public synchronized void getChapter(ClientSession originator, int chapterId) throws BeanNotFoundException
+    {
+        Chapter chapter = idToChapter.get(chapterId);
+        if (chapter == null)
+        {
+            throw new BeanNotFoundException("Chapter with Id " + chapterId + " was not found.");
+        }
+        modelObserver.receiveCommandFromModel(Command.GetChapter, chapter, originator);
+    }
+    
+    @Override
+    public synchronized void lockChapter(ClientSession originator, int chapterId) throws LockException
+    {
+        if (lockedChapters.contains(chapterId))
+        {
+            throw new LockException("Chapter has been already locked.");
+        }
+        
+        lockedChapters.add(chapterId);
+    }
+    
+    @Override
+    public synchronized void lockBook(ClientSession originator, int bookId) throws LockException
+    {
+        if (lockedBooks.contains(bookId))
+        {
+            throw new LockException("Book has been already locked.");
+        }
+        
+        lockedBooks.add(bookId);
+    }
+    
+    @Override
+    public synchronized void unlockChapter(ClientSession originator, int chapterId) throws LockException
+    {
+        if (!lockedChapters.contains(chapterId))
+        {
+            throw new LockException("Chapter was not locked.");
+        }
+        
+        lockedChapters.remove(chapterId);
+    }
+    
+    @Override
+    public synchronized void unlockBook(ClientSession originator, int bookId) throws LockException
+    {
+        if (!lockedBooks.contains(bookId))
+        {
+            throw new LockException("Book was not locked.");
+        }
+        
+        lockedBooks.remove(bookId);
+    }
+    
+    private final Map<Integer, Book> idToBook = new HashMap<>();
+    private final Map<Integer, Chapter> idToChapter = new HashMap<>();
+    private final Set<Integer> lockedChapters = new HashSet<>();
+    private final Set<Integer> lockedBooks = new HashSet<>();
+    private ModelObserver modelObserver;
     private static final long serialVersionUID = 1L;
 }

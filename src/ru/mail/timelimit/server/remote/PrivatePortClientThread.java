@@ -5,13 +5,14 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import ru.mail.timelimit.common.utils.SocketReadWriteHelper;
+import ru.mail.timelimit.server.controller.session.ClientSession;
 
 public class PrivatePortClientThread extends Thread
 {
     
-    public PrivatePortClientThread (ServerSocket serverSocket, RequestProcessor requestProcessor) throws IOException
+    public PrivatePortClientThread (Socket clientSocket, RequestProcessor requestProcessor) throws IOException
     {
-        this.serverSocket = serverSocket;
+        this.clientSocket = clientSocket;
         this.requestProcessor = requestProcessor;
     }
     
@@ -20,8 +21,6 @@ public class PrivatePortClientThread extends Thread
     {
         try
         {
-            this.clientSocket = serverSocket.accept();
-            
             while(true)
             {
                 DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
@@ -42,7 +41,6 @@ public class PrivatePortClientThread extends Thread
         }
     }
     
-    private Socket clientSocket;
-    private final ServerSocket serverSocket;
+    private final Socket clientSocket;
     private final RequestProcessor requestProcessor;
 }

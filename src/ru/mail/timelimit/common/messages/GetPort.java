@@ -9,7 +9,7 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "GetPort")
-public class GetPort 
+public class GetPort
 {    
     public GetPort()
     {

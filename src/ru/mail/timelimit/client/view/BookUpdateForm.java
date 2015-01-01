@@ -39,8 +39,8 @@ class BookUpdateForm
 
         updateBook = new JButton("Обновить книгу");
         panel.add(updateBook);
-        JButton discard = new JButton("Отменить");
-        panel.add(discard);
+        cancel = new JButton("Отменить");
+        panel.add(cancel);
 
         SpringUtilities.makeCompactGrid(panel,
                 5, 2,
@@ -49,9 +49,9 @@ class BookUpdateForm
 
         dialog.setContentPane(panel);
 
-        dialog.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        dialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         dialog.pack();
-        discard.addActionListener(new ActionListener()
+        cancel.addActionListener(new ActionListener()
         {
 
             @Override
@@ -84,6 +84,7 @@ class BookUpdateForm
     final JTextField bookIsbn;
     final JTextField bookAnnotation;   
     final JButton updateBook;
+    final JButton cancel;
     final JDialog dialog;
     private static final String EMPTY_STRING = "";
 }

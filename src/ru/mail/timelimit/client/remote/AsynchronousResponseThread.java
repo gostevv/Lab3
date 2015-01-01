@@ -1,9 +1,11 @@
 package ru.mail.timelimit.client.remote;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import ru.mail.timelimit.common.utils.SocketReadWriteHelper;
 
 public class AsynchronousResponseThread extends Thread
 {
@@ -11,17 +13,16 @@ public class AsynchronousResponseThread extends Thread
     {
         this.socket = socket;
         this.processor = processor;
-        BufferedReader tempBr = null;
+        DataInputStream temp = null;
         try
         {
-            tempBr = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            temp = new DataInputStream(socket.getInputStream());
         }
         catch(IOException ex)
         {
-            System.out.println(ex);
-            ///////////////////////////////////////TODO
+            throw new RuntimeException(ex);
         }
-        bufferedReader = tempBr;
+        dis = temp;
     }
             
     @Override
@@ -31,21 +32,18 @@ public class AsynchronousResponseThread extends Thread
         {
             while(true)
             {
-                char[] buffer = new char[1024];
-                StringBuilder xmlResponce = new StringBuilder();
-                int readSimbols;
-                while((readSimbols = bufferedReader.read(buffer)) != -1)
-                {
-                    xmlResponce.append(new String(buffer, 0, readSimbols));
-                }
-                processor.process(xmlResponce.toString());
+                int length = dis.readInt();
+
+                String xmlResponce = SocketReadWriteHelper.readString(dis, length);
+            
+                processor.process(xmlResponce);
             }
         }
         catch (Exception ex)
         {
             try
             {
-                bufferedReader.close();
+                dis.close();
                 socket.close();
             } 
             catch (IOException exc)
@@ -56,6 +54,6 @@ public class AsynchronousResponseThread extends Thread
     }
     
     private final Socket socket;
-    private final BufferedReader bufferedReader;
+    private final DataInputStream dis;
     private final AsynchronousResponceProcessor processor;
 }
