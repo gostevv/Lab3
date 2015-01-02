@@ -43,7 +43,7 @@ class ChapterUpdateForm
 
         dialog.setContentPane(panel);
 
-        dialog.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        dialog.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         dialog.pack();
         cancel.addActionListener(new ActionListener()
         {

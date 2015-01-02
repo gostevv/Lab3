@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import ru.mail.timelimit.server.controller.ServerController;
 
+/* TODO: Threads with while(true) -> java.util.Timer or smt else */
 public class DemonStartThread extends Thread
 {
     public DemonStartThread(ServerController serverController) throws Exception
@@ -23,8 +24,8 @@ public class DemonStartThread extends Thread
                 Socket clientSocket = serverSocketPublicPort.accept();
                 System.out.println("Accepted socket");
                 
-                SendPortToClientThread sendPortToClientThread = new SendPortToClientThread(clientSocket, serverController);
-                sendPortToClientThread.start();
+                EstablishConnectionWithClientThread establishConnectionWithClientThread = new EstablishConnectionWithClientThread(clientSocket, serverController);
+                establishConnectionWithClientThread.start();
             }
         }
         catch (Exception ex)
@@ -35,6 +36,8 @@ public class DemonStartThread extends Thread
             } 
             catch (IOException exc)
             {
+                System.err.println("DemonStartThread broken. Clients won't be able to connect from now on");
+                // Die DemonStartThread
                 throw new RuntimeException(exc);
             }
         }

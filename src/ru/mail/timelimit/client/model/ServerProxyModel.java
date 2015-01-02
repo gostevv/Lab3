@@ -1,11 +1,10 @@
 package ru.mail.timelimit.client.model;
 
 import java.beans.PropertyChangeListener;
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import javax.xml.bind.JAXBException;
 import ru.mail.timelimit.common.messages.*;
 import ru.mail.timelimit.common.utils.SocketReadWriteHelper;
@@ -43,57 +42,40 @@ public class ServerProxyModel
         System.out.println("Port received " + port.getPortId());
         
         clientSocket = new Socket("localhost", port.getPortId());
-        serverProxyModelLoopback = new ServerProxyModelLoopback(clientSocket);
+        serverProxyModelLoopback = ServerProxyModelLoopback.startListenToSocket(clientSocket);
     }
     
     public void addBook(int bookId, String title, String author, String isbn, String annotation)
     {
-        AddBook addBook = new AddBook(bookId, title, author, isbn, annotation);
-        
-        String xml = null;
+        /* TODO: Dozens of similar code below. Should be refactored, but i only have 2 hands after all */
         try
         {
-            xml = AddBook.toXml(addBook);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-        
-        try
-        {
+            AddBook addBook = new AddBook(bookId, title, author, isbn, annotation);
+            String xml = AddBook.toXml(addBook);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
+            // Unexpected exception. Here everything should be ok.
             throw new RuntimeException(exception);
         }
     }
 
     public void addChapter(int chapterId, int bookId, String title, String chapterText)
     {
-        AddChapter addChapter = new AddChapter(chapterId, bookId, title, chapterText);
-        
-        String xml = null;
         try
         {
-            xml = AddChapter.toXml(addChapter);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-        
-        try
-        {
+            AddChapter addChapter = new AddChapter(chapterId, bookId, title, chapterText);
+            String xml = AddChapter.toXml(addChapter);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
+            // Unexpected exception. Here everything should be ok.
             throw new RuntimeException(exception);
         }
     } 
@@ -112,211 +94,137 @@ public class ServerProxyModel
     
     public void deleteBook(int bookId)
     {
-        DeleteBook deleteBook = new DeleteBook(bookId);
-        
-        String xml = null;
         try
         {
-            xml = DeleteBook.toXml(deleteBook);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-        
-        try
-        {
+            DeleteBook deleteBook = new DeleteBook(bookId);        
+            String xml = DeleteBook.toXml(deleteBook);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
+            // Unexpected exception. Here everything should be ok.
             throw new RuntimeException(exception);
         }
     }
     
     public void deleteChapter(int chapterId)
     {
-        DeleteChapter deleteChapter = new DeleteChapter(chapterId);
-        
-        String xml = null;
         try
         {
-            xml = DeleteChapter.toXml(deleteChapter);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException();
-        }
-        
-        try
-        {
+            DeleteChapter deleteChapter = new DeleteChapter(chapterId);
+            String xml = DeleteChapter.toXml(deleteChapter);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
+            // Unexpected exception. Here everything should be ok.
             throw new RuntimeException(exception);
         }
     }
     
     public void getBook(int bookId)
     {
-        GetBook getBook = GetBook.ofRequest(bookId);
-        
-        String xml = null;
         try
         {
-            xml = GetBook.toXml(getBook);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-        
-        try
-        {
-            System.out.println(" GetBook " + xml);
+            GetBook getBook = GetBook.ofRequest(bookId);        
+            String xml = GetBook.toXml(getBook);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
-            System.out.println(" GetBook written ");
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
+            // Unexpected exception. Here everything should be ok.
             throw new RuntimeException(exception);
         }
     }
     
     public void getChapter(int chapterId)
     {
-        GetChapter getChapter = GetChapter.ofRequest(chapterId);
-        
-        String xml = null;
         try
         {
-            xml = GetChapter.toXml(getChapter);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException();
-        }
-        
-        try
-        {
+            GetChapter getChapter = GetChapter.ofRequest(chapterId);
+            String xml = GetChapter.toXml(getChapter);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
+            // Unexpected exception. Here everything should be ok.
             throw new RuntimeException(exception);
         }
     }
     
     public void lockBook(int bookId) 
     {
-        LockBook lockBook = new LockBook(bookId);
-        
-        String xml = null;
         try
         {
-            xml = LockBook.toXml(lockBook);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-        
-        try
-        {
+            LockBook lockBook = new LockBook(bookId);
+            String xml = LockBook.toXml(lockBook);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
+            // Unexpected exception. Here everything should be ok.
             throw new RuntimeException(exception);
         }
     }
 
     public void unlockBook(int bookId) 
     {
-        UnlockBook unlockBook = new UnlockBook(bookId);
-        
-        String xml = null;
         try
         {
-            xml = UnlockBook.toXml(unlockBook);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-        
-        try
-        {
+            UnlockBook unlockBook = new UnlockBook(bookId);
+            String xml = UnlockBook.toXml(unlockBook);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
-            throw new RuntimeException();
+            // Unexpected exception. Here everything should be ok.
+            throw new RuntimeException(exception);
         }
     }
 
     public void lockChapter(int chapterId) 
     {
-        LockChapter lockChapter = new LockChapter(chapterId);
-        
-        String xml = null;
         try
         {
-            xml = LockChapter.toXml(lockChapter);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-        
-        try
-        {
+            LockChapter lockChapter = new LockChapter(chapterId);
+            String xml = LockChapter.toXml(lockChapter);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
-            throw new RuntimeException();
+            // Unexpected exception. Here everything should be ok.
+            throw new RuntimeException(exception);
         }
     }
 
     public void unlockChapter(int chapterId) 
     {
-        UnlockChapter unlockChapter = new UnlockChapter(chapterId);
-        
-        String xml = null;
         try
         {
-            xml = UnlockChapter.toXml(unlockChapter);
-        }
-        catch (JAXBException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-        
-        try
-        {
+            UnlockChapter unlockChapter = new UnlockChapter(chapterId);
+            String xml = UnlockChapter.toXml(unlockChapter);
             DataOutputStream das = new DataOutputStream(clientSocket.getOutputStream());
             das.writeInt(xml.length());
             das.writeBytes(xml);
         }
-        catch(IOException exception)
+        catch(JAXBException | IOException exception)
         {
-            throw new RuntimeException();
+            // Unexpected exception. Here everything should be ok.
+            throw new RuntimeException(exception);
         }
     }
     

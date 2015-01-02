@@ -10,11 +10,15 @@ import ru.mail.timelimit.client.remote.AsynchronousResponseThread;
 
 public class ServerProxyModelLoopback 
 {
-    ServerProxyModelLoopback(Socket socket) throws Exception
+    
+    public static ServerProxyModelLoopback startListenToSocket(Socket socket) throws Exception
     {
-        asynchronousResponceProcessor = new AsynchronousResponceProcessor(this);
-        asynchronousResponceThread = new AsynchronousResponseThread(socket, asynchronousResponceProcessor);
-        asynchronousResponceThread.start();
+        ServerProxyModelLoopback serverProxyModelLoopback = new ServerProxyModelLoopback();
+        AsynchronousResponceProcessor asynchronousResponceProcessor = 
+                new AsynchronousResponceProcessor(serverProxyModelLoopback);
+        
+        serverProxyModelLoopback.initAndStartResponceThread(socket, asynchronousResponceProcessor);
+        return serverProxyModelLoopback;
     }
     
     public void addListener(PropertyChangeListener propertyChangeListener)
@@ -53,8 +57,24 @@ public class ServerProxyModelLoopback
         propertyChangeCaller.firePropertyChange("GetBook", new Book(bookId, title, author, isbn, annotation), null); 
     }
     
+    public void getErrorCallbackLoopback(String errorCallback)
+    {
+        propertyChangeCaller.firePropertyChange("ErrorCallback", null, errorCallback);
+    }
+    
+    private void initAndStartResponceThread(Socket socket, AsynchronousResponceProcessor asynchronousResponceProcessor)
+    {
+        asynchronousResponceThread = new AsynchronousResponseThread(socket, asynchronousResponceProcessor);
+        asynchronousResponceThread.start();
+    }
+    
+    private ServerProxyModelLoopback()
+    {
+        
+    }
+    
     private SwingPropertyChangeSupport propertyChangeCaller = new SwingPropertyChangeSupport(this);
-    private final AsynchronousResponseThread asynchronousResponceThread;
-    private final AsynchronousResponceProcessor asynchronousResponceProcessor;
+    private AsynchronousResponseThread asynchronousResponceThread;
+    private AsynchronousResponceProcessor asynchronousResponceProcessor;
     
 }

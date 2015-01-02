@@ -2,6 +2,7 @@ package ru.mail.timelimit.client.model.javabeans;
 
 import java.io.Serializable;
 
+/* Used only as a container for communications between model and controller */
 public class Chapter implements Serializable
 {
 

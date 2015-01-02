@@ -48,34 +48,6 @@ public class SimpleModel implements Model
         modelObserver.receiveCommandFromModel(Command.AddChapter, chapter, originator);
     }
     
-    @Override
-    public synchronized void updateBook(ClientSession originator, int bookId, String title, String author, String isbn, String annotation) throws BeanNotFoundException, LockException
-    {
-        deleteBook(originator, bookId);
-        try
-        {
-            addBook(originator, bookId, title, author, isbn, annotation);
-        }
-        catch (BeanAlreadyExistsException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-    }
-
-    @Override
-    public synchronized void updateChapter(ClientSession originator, int chapterId, int bookId, String title, String chapterText) throws BeanNotFoundException, LockException
-    {
-        deleteChapter(originator, chapterId);
-        try
-        {
-            addChapter(originator, chapterId, bookId, title, chapterText);
-        }
-        catch (BeanAlreadyExistsException exception)
-        {
-            throw new RuntimeException(exception);
-        }
-    } 
-    
     @Override 
     public synchronized void deleteBook(ClientSession originator, int bookId) throws BeanNotFoundException, LockException
     {
@@ -84,7 +56,8 @@ public class SimpleModel implements Model
             throw new BeanNotFoundException("Book with Id " + bookId + " doesn't exist.");
         }
 
-        if (lockedChapters.contains(bookId))
+        if ((clientSessionToLockedBooks.get(originator) != bookId)
+            && clientSessionToLockedBooks.values().contains(bookId))
         {
             throw new LockException("Book is locked");
         }
@@ -106,7 +79,8 @@ public class SimpleModel implements Model
             throw new BeanNotFoundException("Chapter with Id " + chapterId + " doesn't exist");
         }
         
-        if (lockedChapters.contains(chapterId))
+        if ((clientSessionToLockedChapters.get(originator) != chapterId)
+            && clientSessionToLockedChapters.values().contains(chapterId))
         {
             throw new LockException("Chapter is locked");
         }
@@ -152,51 +126,51 @@ public class SimpleModel implements Model
     @Override
     public synchronized void lockChapter(ClientSession originator, int chapterId) throws LockException
     {
-        if (lockedChapters.contains(chapterId))
+        if (clientSessionToLockedChapters.values().contains(chapterId))
         {
             throw new LockException("Chapter has been already locked.");
         }
         
-        lockedChapters.add(chapterId);
+        clientSessionToLockedChapters.put(originator, chapterId);
     }
     
     @Override
     public synchronized void lockBook(ClientSession originator, int bookId) throws LockException
     {
-        if (lockedBooks.contains(bookId))
+        if (clientSessionToLockedBooks.values().contains(bookId))
         {
-            throw new LockException("Book has been already locked.");
+            throw new LockException("Book has already been locked.");
         }
         
-        lockedBooks.add(bookId);
+        clientSessionToLockedBooks.put(originator, bookId);
     }
     
     @Override
     public synchronized void unlockChapter(ClientSession originator, int chapterId) throws LockException
     {
-        if (!lockedChapters.contains(chapterId))
+        if (clientSessionToLockedChapters.get(originator) != chapterId)
         {
             throw new LockException("Chapter was not locked.");
         }
         
-        lockedChapters.remove(chapterId);
+        clientSessionToLockedChapters.remove(originator);
     }
     
     @Override
     public synchronized void unlockBook(ClientSession originator, int bookId) throws LockException
     {
-        if (!lockedBooks.contains(bookId))
+        if (clientSessionToLockedBooks.get(originator) != bookId)
         {
             throw new LockException("Book was not locked.");
         }
         
-        lockedBooks.remove(bookId);
+        clientSessionToLockedBooks.remove(originator);
     }
     
     private final Map<Integer, Book> idToBook = new HashMap<>();
     private final Map<Integer, Chapter> idToChapter = new HashMap<>();
-    private final Set<Integer> lockedChapters = new HashSet<>();
-    private final Set<Integer> lockedBooks = new HashSet<>();
+    private final Map<ClientSession, Integer> clientSessionToLockedChapters = new HashMap<>();
+    private final Map<ClientSession, Integer> clientSessionToLockedBooks = new HashMap<>();
     private ModelObserver modelObserver;
     private static final long serialVersionUID = 1L;
 }

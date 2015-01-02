@@ -4,8 +4,6 @@ import ru.mail.timelimit.common.messages.AddBook;
 import ru.mail.timelimit.common.messages.GetChapter;
 import ru.mail.timelimit.common.messages.DeleteBook;
 import ru.mail.timelimit.common.messages.GetBook;
-import ru.mail.timelimit.common.messages.UpdateChapter;
-import ru.mail.timelimit.common.messages.UpdateBook;
 import ru.mail.timelimit.common.messages.AddChapter;
 import ru.mail.timelimit.common.messages.DeleteChapter;
 import java.io.ByteArrayInputStream;
@@ -19,6 +17,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import ru.mail.timelimit.client.model.ServerProxyModelLoopback;
+import ru.mail.timelimit.common.messages.*;
 
 public class AsynchronousResponceProcessor 
 {
@@ -125,30 +124,18 @@ public class AsynchronousResponceProcessor
         }
     }
     
-    /*
-    private class UpdateBookXmlResponceProcessor implements XmlResponceProcessor
+    private class ErrorCallbackXmlResponceProcessor implements XmlResponceProcessor
     {
         @Override
         public void process(String xmlResponce) throws Exception
         {
             ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
-            JAXBContext context = JAXBContext.newInstance(UpdateBook.class);
+            JAXBContext context = JAXBContext.newInstance(ErrorCallback.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-            UpdateBook cs = (UpdateBook) unmarshaller.unmarshal(bais);
+            ErrorCallback errorCallback = (ErrorCallback) unmarshaller.unmarshal(bais);
+            model.getErrorCallbackLoopback(errorCallback.getErrorMessage());
         }
     }
-    
-    private class UpdateChapterXmlResponceProcessor implements XmlResponceProcessor
-    {
-        @Override
-        public void process(String xmlResponce) throws Exception
-        {
-            ByteArrayInputStream bais = new ByteArrayInputStream(xmlResponce.getBytes());
-            JAXBContext context = JAXBContext.newInstance(UpdateChapter.class);
-            Unmarshaller unmarshaller = context.createUnmarshaller();
-            UpdateChapter cs = (UpdateChapter) unmarshaller.unmarshal(bais);
-        }
-    }*/
     
     private final ServerProxyModelLoopback model;
     private final DocumentBuilder documentBuilder;
@@ -162,8 +149,7 @@ public class AsynchronousResponceProcessor
                     put("DeleteChapter", new DeleteChapterXmlResponceProcessor());
                     put("GetBook", new GetBookXmlResponceProcessor());
                     put("GetChapter", new GetChapterXmlResponceProcessor());
-/*                    put("UpdateBook", new UpdateBookXmlResponceProcessor());
-                    put("UpdateChapter", new UpdateChapterXmlResponceProcessor());*/
+                    put("ErrorCallback", new ErrorCallbackXmlResponceProcessor());
                 }
             };
 }

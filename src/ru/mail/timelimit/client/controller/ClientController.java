@@ -161,8 +161,8 @@ public class ClientController implements Controller, PropertyChangeListener
                 String bookAnnotation = view.getUpdateBookAnnotation().getText();
                 try
                 {
-                    model.unlockBook(bookId);
                     model.updateBook(bookId, bookTitle, bookAuthor, bookIsbn, bookAnnotation);
+                    model.unlockBook(bookId);
                     view.hideUpdateBookDialog();
                 }
                 catch(Exception exception)
@@ -199,8 +199,8 @@ public class ClientController implements Controller, PropertyChangeListener
                     String chapterText = view.getUpdateChapterText().getText();
                     try
                     {
-                        model.unlockChapter(chapterId);
                         model.updateChapter(chapterId, bookIdOfChapterId, chapterTitle, chapterText);
+                        model.unlockChapter(chapterId);
                         view.hideUpdateChapterDialog();
                     }
                     catch(Exception exception)
@@ -408,7 +408,7 @@ public class ClientController implements Controller, PropertyChangeListener
      * Also the way it works is hidden in the code of an unknown value.
      * This means whether SwingPropertyChangeSupport starts new threads or not is a secret.
      * 
-     * Can be improved by implementing HashMap (String, LoopbackModelOperation -> interface) instead of a 4 if's
+     * Can be improved by implementing HashMap (String, LoopbackModelOperation -> interface) instead of if's
      * 
      * @param event parameter fired by s model
      */
@@ -518,6 +518,19 @@ public class ClientController implements Controller, PropertyChangeListener
                 public void run() 
                 {
                     view.showUpdateChapterDialog(chapter.getBookId(), chapter.getTitle(), chapter.getChapterText());
+                }
+            });
+        }
+        else if ("ErrorCallback".equalsIgnoreCase(eventName))
+        {
+            final String errorCallback = (String) event.getNewValue();
+            SwingUtilities.invokeLater(new Runnable() 
+            {
+
+                @Override
+                public void run()  
+                {
+                    view.showErrorMessage(errorCallback);
                 }
             });
         }

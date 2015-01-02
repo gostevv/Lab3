@@ -5,20 +5,20 @@ import java.io.IOException;
 
 public class SocketReadWriteHelper 
 {
-    public static synchronized String readString(DataInputStream dis, int stringLength) throws IOException
+    public static String readString(DataInputStream dis, int stringLength) throws IOException
     {
-        StringBuilder receivedPort = new StringBuilder();
+        StringBuilder stringBuilder = new StringBuilder();
         byte[] bytes = new byte[stringLength];
         while(true)
         {
             int symbolsRead = dis.read(bytes);
-            receivedPort.append(new String(bytes, 0, symbolsRead));
+            stringBuilder.append(new String(bytes, 0, symbolsRead));
             //System.out.println(" SocketReadWriteHelper symbolsRead " + symbolsRead + " new String(bytes, 0, symbolsRead) " + new String(bytes, 0, symbolsRead));
-            if (receivedPort.length() == stringLength)
+            if (stringBuilder.length() == stringLength)
             {
                 break;
             }
         }
-        return receivedPort.toString();
+        return stringBuilder.toString();
     }  
 }

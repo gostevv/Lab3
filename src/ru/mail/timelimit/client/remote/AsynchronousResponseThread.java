@@ -1,12 +1,11 @@
 package ru.mail.timelimit.client.remote;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.Socket;
 import ru.mail.timelimit.common.utils.SocketReadWriteHelper;
 
+/* TODO: Threads with while(true) -> java.util.Timer or smt else */
 public class AsynchronousResponseThread extends Thread
 {
     public AsynchronousResponseThread(Socket socket, AsynchronousResponceProcessor processor)

@@ -1,17 +1,13 @@
 package ru.mail.timelimit.server.controller;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashSet;
 import javax.xml.bind.JAXBException;
 import ru.mail.timelimit.server.controller.session.ClientSession;
 import ru.mail.timelimit.server.model.Model;
 import ru.mail.timelimit.server.model.javabeans.Book;
 import ru.mail.timelimit.server.model.javabeans.Chapter;
 import ru.mail.timelimit.server.remote.initserver.DemonStartThread;
-import ru.mail.timelimit.server.remote.RequestProcessor;
 
 public class ServerController implements ModelObserver
 {
@@ -28,8 +24,16 @@ public class ServerController implements ModelObserver
     {
         synchronized(clients)
         {
-            ClientSession clientSession = ClientSession.startClientSession(model, portId);
+            ClientSession clientSession = ClientSession.open(model, portId, this);
             clients.add(clientSession);
+        }
+    }
+    
+    public void removeClient(ClientSession clientSession)
+    {
+        synchronized(clients)
+        {
+            clients.remove(clientSession);
         }
     }
     
@@ -90,6 +94,6 @@ public class ServerController implements ModelObserver
         }
     }
     
-    private final Collection<ClientSession> clients = new LinkedList<>();
+    private final Collection<ClientSession> clients = new HashSet<>();
     private final Model model;
 }

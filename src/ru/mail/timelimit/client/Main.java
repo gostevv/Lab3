@@ -22,16 +22,15 @@ public class Main
         }
         catch(Exception ex)
         {
-            System.err.println("Unable to start program.");
-            System.err.println(ex);
-            throw new RuntimeException();
+            System.err.println("Unable to start a client.");
+            throw new RuntimeException(ex);
         }
         SwingUtilities.invokeAndWait(new Runnable() 
         {
             @Override
             public void run() 
             {
-                view = new SimpleView(); // this piece of ... it doesn't compile without it.
+                view = new SimpleView();
             }
         });
         controller = new ClientController(view, model);

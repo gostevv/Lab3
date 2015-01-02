@@ -1,9 +1,8 @@
 package ru.mail.timelimit.client.model.javabeans;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashSet;
 
+/* Used only as a container for communications between model and controller */
 public class Book implements Serializable
 {
 

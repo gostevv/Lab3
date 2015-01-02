@@ -10,10 +10,10 @@ import ru.mail.timelimit.common.messages.GetPort;
 import ru.mail.timelimit.common.messages.ReceivePort;
 import ru.mail.timelimit.server.controller.ServerController;
 
-public class SendPortToClientThread extends Thread
+public class EstablishConnectionWithClientThread extends Thread
 {
     
-    public SendPortToClientThread (Socket clientSocket, ServerController controller)
+    public EstablishConnectionWithClientThread (Socket clientSocket, ServerController controller)
     {
         this.clientSocket = clientSocket;
         this.controller = controller;
@@ -50,6 +50,8 @@ public class SendPortToClientThread extends Thread
             GetPort port = (GetPort) unmarshaller.unmarshal(
                     new ByteArrayInputStream(getPortMessage.toString().getBytes()));
             
+            
+            /* TODO: Replace dummy get port strategy. (15000 + rnd.nextInt(50000)) */
             ReceivePort sendPort = new ReceivePort(15000 + rnd.nextInt(50000));
             controller.addClient(sendPort.getPortId());
             
@@ -69,6 +71,8 @@ public class SendPortToClientThread extends Thread
         }
         catch (Exception ex)
         {
+            System.err.println("SendPortToClientThread broken.");
+            // Die SendPortToClientThread
             throw new RuntimeException(ex);
         }
         

@@ -1,34 +1,38 @@
 package ru.mail.timelimit.server.controller.session;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.Collections;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
+import java.net.Socket;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.xml.bind.JAXBException;
-import javax.xml.parsers.ParserConfigurationException;
 import ru.mail.timelimit.common.messages.*;
+import ru.mail.timelimit.server.controller.ServerController;
 import ru.mail.timelimit.server.model.Model;
 import ru.mail.timelimit.server.model.javabeans.Book;
 import ru.mail.timelimit.server.model.javabeans.Chapter;
-import ru.mail.timelimit.server.remote.PrivatePortClientThread;
-import ru.mail.timelimit.server.remote.RequestProcessor;
+import ru.mail.timelimit.server.remote.OneClientRequestProcessor;
 import ru.mail.timelimit.server.remote.WaitForClientThread;
 
 public class ClientSession
 {
 
-    public static ClientSession startClientSession(Model model, int portId) throws Exception
-    {
-        ClientSession clientSession = new ClientSession(portId);
-        RequestProcessor requestProcessor = new RequestProcessor(model, clientSession);
+    public static ClientSession open(Model model, int portId, ServerController controller) throws Exception
+    {   
+        ClientSession clientSession = new ClientSession(portId, controller);
+        clientSession.serverSocket = new ServerSocket(portId);
+        OneClientRequestProcessor requestProcessor = new OneClientRequestProcessor(model, clientSession);
         clientSession.setRequestProcessor(requestProcessor);
         WaitForClientThread waitForClientThread = new WaitForClientThread(clientSession);
         waitForClientThread.start();
         return clientSession;
+    }
+    
+    public void close() throws IOException
+    {
+        System.out.println("Close client session on portid " + portId);
+        controller.removeClient(this);
+        serverSocket.close();
+        clientSocket.close();
     }
     
     public void sendAddChapter(Chapter chapter) throws JAXBException 
@@ -80,7 +84,13 @@ public class ClientSession
         messageQueue.add(GetBook.toXml(getBook));
     }
     
-    public Queue<String> getMessageQueue()
+    public void sendErrorCallback(Exception exception) throws JAXBException
+    {
+        ErrorCallback errorCallback = new ErrorCallback(exception.getMessage());
+        messageQueue.add(ErrorCallback.toXml(errorCallback));
+    }
+    
+    public ConcurrentLinkedQueue<String> getMessageQueue()
     {
         return messageQueue;
     }
@@ -90,23 +100,64 @@ public class ClientSession
         return portId;
     }
 
-    private ClientSession(int portId)
+    private ClientSession(int portId, ServerController controller)
     {
         System.out.println("Start new client session with port " + portId);
         this.portId = portId;
+        this.controller = controller;
     }
 
-    public RequestProcessor getRequestProcessor() 
+    public OneClientRequestProcessor getRequestProcessor() 
     {
         return requestProcessor;
     }
+    
+    public ServerSocket getServerSocket() 
+    {
+        return serverSocket;
+    }
 
-    public void setRequestProcessor(RequestProcessor requestProcessor) 
+    public void setRequestProcessor(OneClientRequestProcessor requestProcessor) 
     {
         this.requestProcessor = requestProcessor;
     }
     
-    private RequestProcessor requestProcessor;
-    private final Queue<String> messageQueue = new ConcurrentLinkedQueue<String>();
+    public void setClientSocket(Socket clientSocket) 
+    {
+        this.clientSocket = clientSocket;
+    }
+
+    @Override
+    public boolean equals(Object obj) 
+    {
+        if (obj == null) 
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass()) 
+        {
+            return false;
+        }
+        final ClientSession other = (ClientSession) obj;
+        if (this.portId != other.portId) 
+        {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() 
+    {
+        int hash = 5;
+        hash = 53 * hash + this.portId;
+        return hash;
+    }
+    
+    private OneClientRequestProcessor requestProcessor;
+    private final ConcurrentLinkedQueue<String> messageQueue = new ConcurrentLinkedQueue<>();
     private final int portId;
+    private ServerSocket serverSocket;
+    private Socket clientSocket;
+    private final ServerController controller;
 }

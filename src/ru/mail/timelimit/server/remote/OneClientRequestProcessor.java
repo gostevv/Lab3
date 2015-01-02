@@ -4,14 +4,13 @@ import ru.mail.timelimit.common.messages.AddBook;
 import ru.mail.timelimit.common.messages.GetChapter;
 import ru.mail.timelimit.common.messages.DeleteBook;
 import ru.mail.timelimit.common.messages.GetBook;
-import ru.mail.timelimit.common.messages.UpdateChapter;
-import ru.mail.timelimit.common.messages.UpdateBook;
 import ru.mail.timelimit.common.messages.AddChapter;
 import ru.mail.timelimit.common.messages.DeleteChapter;
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -22,10 +21,10 @@ import ru.mail.timelimit.common.messages.*;
 import ru.mail.timelimit.server.controller.session.ClientSession;
 import ru.mail.timelimit.server.model.Model;
 
-public class RequestProcessor 
+public class OneClientRequestProcessor 
 {
 
-    public RequestProcessor(Model model, ClientSession clientSession) throws ParserConfigurationException
+    public OneClientRequestProcessor(Model model, ClientSession clientSession) throws ParserConfigurationException
     {
         this.model = model;
         this.clientSession = clientSession;
@@ -33,13 +32,18 @@ public class RequestProcessor
         documentBuilder = documentBuilderFactory.newDocumentBuilder();
     }
     
-    void process(String xmlRequest) throws Exception
+    public void process(String xmlRequest) throws Exception
     {
         System.out.println("Process xmlRequest " + xmlRequest);
         Document xml = documentBuilder.parse(new ByteArrayInputStream(xmlRequest.getBytes()));
         Element xmlRootElement = xml.getDocumentElement();
         String requestName = xmlRootElement.getTagName();
         requstNameToRequestClass.get(requestName).process(xmlRequest);
+    }
+
+    public void sendErrorCallback(Exception exception) throws JAXBException
+    {
+        clientSession.sendErrorCallback(exception);
     }
 
     private interface XmlRequestProcessor

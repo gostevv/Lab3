@@ -13,6 +13,11 @@ public enum Command
     {
         this.command = command;
     }
+
+    public String getCommand() 
+    {
+        return command;
+    }
     
     private final String command;
 }
